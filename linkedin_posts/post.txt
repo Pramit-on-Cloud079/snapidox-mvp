@@ -1,0 +1,1 @@
+🚀 Excited to share my latest AWS project: a seamless pipeline for deploying Lambda functions using CodePipeline and GitHub! Automating the deployment process has not only saved me time, but also ensured consistent and reliable releases. Have you tried a similar setup for your projects? Share your experiences below! #AWS #Lambda #CodePipeline #GitHub #DevOps
