@@ -1,0 +1,20 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snapidox - Generate AWS Project Report</title>
+</head>
+<body>
+    <h2>Snapidox: AI-Generated AWS Project Documentation</h2>
+
+    <form action="/generate" method="POST" enctype="multipart/form-data">
+        <label>Enter your project summary prompt:</label><br>
+        <textarea name="prompt" rows="6" cols="60" required></textarea><br><br>
+
+        <label>Upload screenshots (optional):</label><br>
+        <input type="file" name="screenshots" multiple><br><br>
+
+        <button type="submit">Generate Report</button>
+    </form>
+</body>
+</html>

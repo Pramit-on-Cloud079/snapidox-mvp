@@ -1,0 +1,24 @@
+<!-- templates/result.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snapidox - Report Ready</title>
+</head>
+<body>
+    <h2>✅ Your AWS Project Report is Ready!</h2>
+
+    <h3>📄 Summary:</h3>
+    <pre>{{ summary }}</pre>
+
+    <h3>📥 Downloads:</h3>
+    <ul>
+        <li><a href="/download/{{ pdf_path }}">Download PDF</a></li>
+        <li><a href="/download/{{ readme_path }}">Download README.md</a></li>
+    </ul>
+
+    <h3>🔗 Suggested LinkedIn Post:</h3>
+    <pre>{{ linkedin_post }}</pre>
+
+    <br><a href="/">🔄 Generate Another</a>
+</body>
+</html>

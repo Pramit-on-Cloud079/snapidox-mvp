@@ -1,5 +1,0 @@
-fpdf
-python-dotenv
-openai
-flask
-
