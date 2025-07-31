@@ -10,3 +10,8 @@ __pycache__/
 
 # VSCode settings (optional)
 .vscode/
+
+# Ignore user-generated files from Snapidox
+/web/reports/
+/web/README.md
+/web/linkedin_post.txt
