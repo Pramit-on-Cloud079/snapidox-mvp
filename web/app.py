@@ -1,103 +1,66 @@
-import sys
-import os
-# Allow importing from root directory
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-import threading
-import datetime
 from flask import Flask, render_template, request, send_file
-from fpdf import FPDF
+import os
+from datetime import datetime
 from src.utils.genai import generate_summary
+from src.utils.pdfgen import create_pdf
+from src.utils.readme import create_readme
+from src.utils.linkedin import create_linkedin_post
 
 app = Flask(__name__)
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# ✅ Auto-delete helper (15 minutes)
-def schedule_file_cleanup(file_path, delay_seconds=900):
-    def delete_file():
-        try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                print(f"[Cleanup] Deleted {file_path}")
-        except Exception as e:
-            print(f"[Cleanup Error] Failed to delete {file_path}: {e}")
-    threading.Timer(delay_seconds, delete_file).start()
-
-@app.route("/", methods=["GET", "POST"])
+@app.route('/')
 def index():
-    if request.method == "POST":
-        prompt = request.form["prompt"]
-        summary = generate_summary(prompt)
+    return render_template('index.html')
 
-        # Metadata
-        project_title = prompt.strip().capitalize()
-        author = "Pramit Dasgupta"
-        date = datetime.datetime.now().strftime("%Y-%m-%d")
+@app.route('/generate', methods=['POST'])
+def generate():
+    prompt = request.form['prompt']
+    screenshots = request.files.getlist('screenshots')
 
-        # === PDF Generation ===
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=14)
-        pdf.cell(200, 10, txt="Snapidox Project Report", ln=True, align="C")
-        pdf.set_font("Arial", size=12)
-        pdf.ln(10)
-        pdf.cell(200, 10, txt=f"Project Title: {project_title}", ln=True)
-        pdf.cell(200, 10, txt=f"Author: {author}", ln=True)
-        pdf.cell(200, 10, txt=f"Date: {date}", ln=True)
-        pdf.ln(5)
-        pdf.multi_cell(0, 10, f"Summary:\n{summary}")
-        os.makedirs("web/reports", exist_ok=True)
-        pdf_path = "web/reports/project_report.pdf"
-        pdf.output(pdf_path)
-        schedule_file_cleanup(pdf_path)
+    # ✅ Step 1: Clear all previous uploads
+    for folder in os.listdir(UPLOAD_FOLDER):
+        folder_path = os.path.join(UPLOAD_FOLDER, folder)
+        if os.path.isdir(folder_path):
+            for file in os.listdir(folder_path):
+                os.remove(os.path.join(folder_path, file))
+            os.rmdir(folder_path)
 
-        # === README Generation ===
-        readme_path = "web/README.md"
-        readme_content = f"""# {project_title}
+    # Step 2: Create new timestamped folder
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    folder_name = os.path.join(UPLOAD_FOLDER, timestamp)
+    os.makedirs(folder_name, exist_ok=True)
 
-**Author:** {author}  
-**Date:** {date}  
+    # Step 3: Save screenshots
+    screenshot_paths = []
+    for file in screenshots:
+        if file and file.filename:
+            filepath = os.path.join(folder_name, file.filename)
+            file.save(filepath)
+            screenshot_paths.append(filepath)
 
-## Summary
-{summary.strip()}
+    # Step 4: Generate content
+    summary_text = generate_summary(prompt)
+    pdf_path = os.path.join(folder_name, 'project_report.pdf')
+    create_pdf(summary_text, screenshot_paths, pdf_path)
 
-## Features
-- Automated deployment using AWS tools
-- Based on prompt: “{prompt}”
+    readme_path = os.path.join(folder_name, 'README.md')
+    create_readme(summary_text, readme_path)
 
-## Output Files
-- PDF Report: `project_report.pdf`
-"""
-        with open(readme_path, "w", encoding="utf-8") as f:
-            f.write(readme_content)
-        schedule_file_cleanup(readme_path)
+    linkedin_post = create_linkedin_post(summary_text)
 
-        # === LinkedIn Post Generation ===
-        linkedin_path = "web/linkedin_post.txt"
-        linkedin_post = f"""🚀 Just documented a new AWS project using Snapidox!
+    return render_template(
+        'result.html',
+        summary=summary_text,
+        pdf_path=pdf_path,
+        readme_path=readme_path,
+        linkedin_post=linkedin_post
+    )
 
-🛠️ **{project_title}**  
-📅 {date}
+@app.route('/download/<path:filename>')
+def download(filename):
+    return send_file(filename, as_attachment=True)
 
-🔍 Summary:  
-{summary.strip()}
-
-📎 Generated:  
-✅ PDF Report  
-✅ GitHub README  
-✅ LinkedIn Post Caption
-
-Try it yourself and automate your AWS documentation!"""
-        with open(linkedin_path, "w", encoding="utf-8") as f:
-            f.write(linkedin_post)
-        schedule_file_cleanup(linkedin_path)
-
-        return render_template("index.html", generated=True)
-
-    return render_template("index.html", generated=False)
-
-@app.route("/download/<filename>")
-def download_file(filename):
-    return send_file(f"web/{filename}", as_attachment=True)
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
