@@ -1,14 +1,26 @@
 import sys
 import os
+# Allow importing from root directory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from flask import Flask, render_template, request, send_file
-from src.utils.genai import generate_summary
-from fpdf import FPDF
+import threading
 import datetime
-import os
+from flask import Flask, render_template, request, send_file
+from fpdf import FPDF
+from src.utils.genai import generate_summary
 
 app = Flask(__name__)
+
+# ✅ Auto-delete helper (15 minutes)
+def schedule_file_cleanup(file_path, delay_seconds=900):
+    def delete_file():
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"[Cleanup] Deleted {file_path}")
+        except Exception as e:
+            print(f"[Cleanup Error] Failed to delete {file_path}: {e}")
+    threading.Timer(delay_seconds, delete_file).start()
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -36,8 +48,10 @@ def index():
         os.makedirs("web/reports", exist_ok=True)
         pdf_path = "web/reports/project_report.pdf"
         pdf.output(pdf_path)
+        schedule_file_cleanup(pdf_path)
 
         # === README Generation ===
+        readme_path = "web/README.md"
         readme_content = f"""# {project_title}
 
 **Author:** {author}  
@@ -53,10 +67,12 @@ def index():
 ## Output Files
 - PDF Report: `project_report.pdf`
 """
-        with open("web/README.md", "w", encoding="utf-8") as f:
+        with open(readme_path, "w", encoding="utf-8") as f:
             f.write(readme_content)
+        schedule_file_cleanup(readme_path)
 
         # === LinkedIn Post Generation ===
+        linkedin_path = "web/linkedin_post.txt"
         linkedin_post = f"""🚀 Just documented a new AWS project using Snapidox!
 
 🛠️ **{project_title}**  
@@ -71,14 +87,13 @@ def index():
 ✅ LinkedIn Post Caption
 
 Try it yourself and automate your AWS documentation!"""
-
-        with open("web/linkedin_post.txt", "w", encoding="utf-8") as f:
+        with open(linkedin_path, "w", encoding="utf-8") as f:
             f.write(linkedin_post)
+        schedule_file_cleanup(linkedin_path)
 
         return render_template("index.html", generated=True)
 
     return render_template("index.html", generated=False)
-
 
 @app.route("/download/<filename>")
 def download_file(filename):
