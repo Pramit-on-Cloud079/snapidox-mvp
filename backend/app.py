@@ -1,9 +1,12 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
-import os
 import shutil
 from datetime import datetime
-import sys
 
 # Enable importing from root directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
