@@ -1,21 +1,20 @@
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add root directory (snapidox-mvp/) to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 import shutil
 from datetime import datetime
 
-# Enable importing from root directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 from src.utils.genai import generate_summary_and_title, generate_tech_features_arch
 from backend.private_core.generator import generate_detailed_pdf
+
 
 app = Flask(
     __name__,
